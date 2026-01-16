@@ -2,14 +2,19 @@ package resp
 
 import "time"
 
+type IncidentCreateResponse struct {
+	IncidentID int `json:"incident_id"`
+}
+
 type IncidentResponse struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	Lattitude float64   `json:"latitude"`
-	Longitude float64   `json:"longitude"`
-	Radius    float64   `json:"radius_m"`
-	IsActive  bool      `json:"is_active"`
-	CreatedAt time.Time `json:"created_at"`
+	IncidentID string    `json:"incident_id"`
+	Name       string    `json:"name"`
+	Descr      string    `json:"descr"`
+	Lattitude  float64   `json:"latitude"`
+	Longitude  float64   `json:"longitude"`
+	Radius     float64   `json:"radius_m"`
+	IsActive   bool      `json:"is_active"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
 type IncidentListResponse struct {
