@@ -7,14 +7,15 @@ type IncidentCreateResponse struct {
 }
 
 type IncidentResponse struct {
-	IncidentID string    `json:"incident_id"`
+	IncidentID int       `json:"incident_id"`
 	Name       string    `json:"name"`
 	Descr      string    `json:"descr"`
-	Lattitude  float64   `json:"latitude"`
+	Latitude   float64   `json:"latitude"`
 	Longitude  float64   `json:"longitude"`
 	Radius     float64   `json:"radius_m"`
 	IsActive   bool      `json:"is_active"`
 	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 type IncidentListResponse struct {
