@@ -43,10 +43,10 @@ func (r *IncidentRepo) Create(ctx context.Context, incident entity.Incident) (in
 
 func (r *IncidentRepo) Read(ctx context.Context, incID int) (*entity.Incident, error) {
 	query := `
-	SELECT (
+	SELECT 
 		id, name, descr, latitude, longitude,
 		radius_m, is_active, created_at, updated_at
-	) FROM incidents
+	FROM incidents
 	WHERE id=$1;	
 	`
 
