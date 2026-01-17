@@ -13,8 +13,12 @@ import (
 // @title geonotify-service API
 // @version 1.0
 // @description REST API сервис для взаимодействия с
-// @host localhost:8080
+// @host localhost:8081
 // @BasePath /
+
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 
 func main() {
 	cfg := config.Load()

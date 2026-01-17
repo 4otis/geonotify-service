@@ -16,6 +16,12 @@ type IncidentRepo struct {
 	pool *pgxpool.Pool
 }
 
+func NewIncidentRepo(pool *pgxpool.Pool) *IncidentRepo {
+	return &IncidentRepo{
+		pool: pool,
+	}
+}
+
 func (r *IncidentRepo) Create(ctx context.Context, incident entity.Incident) (incidentID int, err error) {
 	query := `
 	INSERT INTO incidents (
@@ -33,7 +39,7 @@ func (r *IncidentRepo) Create(ctx context.Context, incident entity.Incident) (in
 		"is_active": true,
 	}
 
-	err = postgres.QueryRowNamed(ctx, r.pool, query, args).Scan(&incident)
+	err = postgres.QueryRowNamed(ctx, r.pool, query, args).Scan(&incidentID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create incident: %w", err)
 	}
@@ -47,7 +53,7 @@ func (r *IncidentRepo) Read(ctx context.Context, incID int) (*entity.Incident, e
 		id, name, descr, latitude, longitude,
 		radius_m, is_active, created_at, updated_at
 	FROM incidents
-	WHERE id=$1;	
+	WHERE id=$1 AND deleted_at IS NULL;	
 	`
 
 	i := &entity.Incident{}
@@ -68,4 +74,35 @@ func (r *IncidentRepo) Read(ctx context.Context, incID int) (*entity.Incident, e
 			fmt.Errorf("failed to select incident (by id=%v): %w", incID, err)
 	}
 	return i, nil
+}
+
+func (r *IncidentRepo) ReadWithPagination(ctx context.Context, page, limit int) ([]*entity.Incident, int, error) {
+	query := `
+	SELECT COUNT(*)
+	FROM incidents
+	WHERE deleted_at IS NULL;
+	`
+	totalIncidents := 0
+
+	err := r.pool.QueryRow(ctx, query).Scan(&totalIncidents)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count incidents: %w", err)
+	}
+
+	incidents := make([]*entity.Incident, 0, totalIncidents)
+
+	if totalIncidents == 0 && page == 1 {
+		return incidents, totalIncidents, nil
+	}
+
+	query = `
+	SELECT 
+		id, name, descr, latitude, longitude,
+		radius_m, is_active, created_at, updated_at
+	FROM incidents
+	WHERE deleted_at IS NULL
+	ORDER BY updated_at DESC;
+	`
+
+	return incidents, totalIncidents, nil
 }

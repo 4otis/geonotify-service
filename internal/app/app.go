@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/4otis/geonotify-service/config"
+
+	_ "github.com/4otis/geonotify-service/docs"
 	"github.com/4otis/geonotify-service/internal/adapter/repo/postgres"
 	"github.com/4otis/geonotify-service/internal/cases"
 	httphandler "github.com/4otis/geonotify-service/internal/handler/http"
@@ -34,11 +36,32 @@ func New(cfg *config.Config) (*App, error) {
 		logger: zapLogger,
 	}
 
+	if err := app.initDB(); err != nil {
+		return nil, err
+	}
+
 	if err := app.initServers(); err != nil {
 		return nil, err
 	}
 
 	return app, nil
+}
+
+func (a *App) initDB() error {
+	ctx := context.Background()
+
+	pool, err := pgxpool.New(ctx, a.config.DBURL)
+	if err != nil {
+		return err
+	}
+	a.dbPool = pool
+
+	if err := pool.Ping(ctx); err != nil {
+		return err
+	}
+
+	a.logger.Info("Database connected successfully")
+	return nil
 }
 
 func (a *App) initServers() error {
@@ -47,7 +70,7 @@ func (a *App) initServers() error {
 
 	httpIncidentHandler := httphandler.NewIncidentHandler(
 		a.logger,
-		"secret-api-key",
+		"1",
 		incidentUseCase,
 	)
 	r := chi.NewRouter()
