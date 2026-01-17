@@ -8,7 +8,7 @@ import (
 
 type IncidentRepo interface {
 	Create(ctx context.Context, incident entity.Incident) (incidentID int, err error)
-	// Read()
+	Read(ctx context.Context, incID int) (i *entity.Incident, err error)
 	// ReadAllWithPagination()
 	// Update()
 	// Delete() error

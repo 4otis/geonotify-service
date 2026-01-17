@@ -40,3 +40,32 @@ func (r *IncidentRepo) Create(ctx context.Context, incident entity.Incident) (in
 
 	return incidentID, nil
 }
+
+func (r *IncidentRepo) Read(ctx context.Context, incID int) (*entity.Incident, error) {
+	query := `
+	SELECT (
+		id, name, descr, latitude, longitude,
+		radius_m, is_active, created_at, updated_at
+	) FROM incidents
+	WHERE id=$1;	
+	`
+
+	i := &entity.Incident{}
+
+	err := r.pool.QueryRow(ctx, query, incID).Scan(
+		&i.ID,
+		&i.Name,
+		&i.Descr,
+		&i.Latitude,
+		&i.Longitude,
+		&i.Radius,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	if err != nil {
+		return &entity.Incident{},
+			fmt.Errorf("failed to select incident (by id=%v): %w", incID, err)
+	}
+	return i, nil
+}
