@@ -89,7 +89,7 @@ func (r *IncidentRepo) ReadWithPagination(ctx context.Context, page, limit int) 
 		return nil, 0, fmt.Errorf("failed to count incidents: %w", err)
 	}
 
-	incidents := make([]*entity.Incident, 0, totalIncidents)
+	incidents := make([]*entity.Incident, 0, limit)
 
 	if totalIncidents == 0 && page == 1 {
 		return incidents, totalIncidents, nil
@@ -101,8 +101,94 @@ func (r *IncidentRepo) ReadWithPagination(ctx context.Context, page, limit int) 
 		radius_m, is_active, created_at, updated_at
 	FROM incidents
 	WHERE deleted_at IS NULL
-	ORDER BY updated_at DESC;
+	ORDER BY updated_at DESC
+	LIMIT $1 OFFSET $2;
 	`
 
+	offset := (page - 1) * limit
+	rows, err := r.pool.Query(ctx, query, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to query incident: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		i := &entity.Incident{}
+		err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Descr,
+			&i.Latitude,
+			&i.Longitude,
+			&i.Radius,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to scan incident from rows: %w", err)
+		}
+		incidents = append(incidents, i)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("error while iterating incident rows^ %w", err)
+	}
+
 	return incidents, totalIncidents, nil
+}
+
+func (r *IncidentRepo) Update(ctx context.Context, incident entity.Incident) error {
+	query := `
+	UPDATE incidents 
+	SET 
+		name = $1,
+		descr = $2,
+		latitude = $3,
+		longitude = $4,
+		radius_m = $5,
+		is_active = $6,
+		updated_at = NOW()
+	WHERE id = $7 AND deleted_at IS NULL;
+	`
+
+	result, err := r.pool.Exec(ctx, query,
+		incident.Name,
+		incident.Descr,
+		incident.Latitude,
+		incident.Longitude,
+		incident.Radius,
+		incident.IsActive,
+		incident.ID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update incident (id=%v): %w", incident.ID, err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return entity.ErrIncidentNotFound
+	}
+
+	return nil
+}
+
+func (r *IncidentRepo) Delete(ctx context.Context, incID int) error {
+	query := `
+	UPDATE incidents 
+	SET 
+		deleted_at = NOW(),
+		updated_at = NOW()
+	WHERE id = $1 AND deleted_at IS NULL;
+	`
+
+	result, err := r.pool.Exec(ctx, query, incID)
+	if err != nil {
+		return fmt.Errorf("failed to soft delete incident (id=%v): %w", incID, err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return entity.ErrIncidentNotFound
+	}
+
+	return nil
 }

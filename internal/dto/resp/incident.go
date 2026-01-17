@@ -18,9 +18,9 @@ type IncidentResponse struct {
 	UpdatedAt  time.Time `json:"updated_at"`
 }
 
-type IncidentListResponse struct {
-	Incidents []IncidentResponse `json:"incidents"`
-	Page      int                `json:"page"`
-	Limit     int                `json:"limit"`
-	Total     int                `json:"total"`
+type IncidentsListResponse struct {
+	Incidents  []IncidentResponse `json:"incidents"`
+	Page       int                `json:"page"`
+	Limit      int                `json:"limit"`
+	TotalPages int                `json:"total_pages"`
 }

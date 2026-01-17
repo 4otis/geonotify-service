@@ -1,6 +1,13 @@
 package entity
 
-import "time"
+import (
+	"errors"
+	"time"
+)
+
+var (
+	ErrIncidentNotFound = errors.New("incident not found")
+)
 
 type Incident struct {
 	ID        int
