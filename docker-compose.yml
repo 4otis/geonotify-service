@@ -4,13 +4,14 @@ services:
   postgres:
     image: postgres:15
     environment:
-      POSTGRES_USER: ${PG_DB_USER}
-      POSTGRES_PASSWORD: ${PG_DB_PASSWORD}
-      POSTGRES_DB: ${PG_DB_NAME}
+      POSTGRES_USER: ${PG_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${PG_DB_PASSWORD:-password}
+      POSTGRES_DB: ${PG_DB_NAME:-geonotify_db}
     ports:
-      - "${PG_DB_PORT}:5432"
+      - "${PG_DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
 
   redis:
     image: redis:7-alpine
@@ -19,6 +20,39 @@ services:
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
+
+  webhook-stub:
+    image: node:18-alpine
+    working_dir: /app
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./webhook-stub:/app
+    command: sh -c "npm install && node server.js"
+    environment:
+      PORT: 9090
+
+  app:
+    build: .
+    ports:
+      - "${HTTP_PORT:-8080}:8080"
+    environment:
+      - HTTP_PORT=${HTTP_PORT:-8080}
+      - PG_DB_HOST=postgres
+      - PG_DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - WEBHOOK_URL=http://webhook-stub:9090/webhook
+      - SECRET_API_KEY=${SECRET_API_KEY:-secret-api-key-required}
+      - STATS_TIME_WINDOWS_MINUTES=${STATS_TIME_WINDOWS_MINUTES:-30}
+      - CACHE_TTL_MINUTES=${CACHE_TTL_MINUTES:-10}
+      - WEBHOOK_MAX_RETRIES=3
+      - WEBHOOK_RETRY_DELAY_SECONDS=60
+    depends_on:
+      - postgres
+      - redis
+      - webhook-stub
+    volumes:
+      - ./logs:/app/logs
 
 volumes:
   postgres_data:

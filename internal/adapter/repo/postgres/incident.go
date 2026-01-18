@@ -202,7 +202,7 @@ func (r *IncidentRepo) ReadAllActive(ctx context.Context) ([]*entity.Incident, e
 	query := `
 	SELECT
 		id, name, descr, latitude, longitude,
-		radius_m, is_active, created_at, ipdated_at
+		radius_m, is_active, created_at, updated_at
 	FROM incidents
 	WHERE is_active=true AND deleted_at IS NULL
 	ORDER BY updated_at DESC;

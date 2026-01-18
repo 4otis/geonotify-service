@@ -12,7 +12,7 @@ import (
 
 // @title geonotify-service API
 // @version 1.0
-// @description REST API сервис для взаимодействия с
+// @description REST API сервис, который является частью системы геооповещений
 // @host localhost:8081
 // @BasePath /
 

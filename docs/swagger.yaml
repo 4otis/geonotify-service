@@ -1,0 +1,377 @@
+basePath: /
+definitions:
+  github_com_4otis_geonotify-service_internal_dto_req.IncidentCreateRequest:
+    properties:
+      descr:
+        type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
+      name:
+        type: string
+      radius_m:
+        type: number
+    type: object
+  github_com_4otis_geonotify-service_internal_dto_req.IncidentUpdateRequest:
+    properties:
+      descr:
+        type: string
+      is_active:
+        type: boolean
+      latitude:
+        type: number
+      longitude:
+        type: number
+      name:
+        type: string
+      radius_m:
+        type: number
+    type: object
+  github_com_4otis_geonotify-service_internal_dto_req.LocationCheckRequest:
+    properties:
+      latitude:
+        type: number
+      longitude:
+        type: number
+      user_id:
+        type: string
+    type: object
+  github_com_4otis_geonotify-service_internal_dto_resp.HealthResponse:
+    properties:
+      active_incidents:
+        type: integer
+      pending_webhooks:
+        type: integer
+      status:
+        type: string
+      timestamp:
+        type: string
+    type: object
+  github_com_4otis_geonotify-service_internal_dto_resp.IncidentCreateResponse:
+    properties:
+      incident_id:
+        type: integer
+    type: object
+  github_com_4otis_geonotify-service_internal_dto_resp.IncidentResponse:
+    properties:
+      created_at:
+        type: string
+      descr:
+        type: string
+      incident_id:
+        type: integer
+      is_active:
+        type: boolean
+      latitude:
+        type: number
+      longitude:
+        type: number
+      name:
+        type: string
+      radius_m:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  github_com_4otis_geonotify-service_internal_dto_resp.IncidentsListResponse:
+    properties:
+      incidents:
+        items:
+          $ref: '#/definitions/github_com_4otis_geonotify-service_internal_dto_resp.IncidentResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  github_com_4otis_geonotify-service_internal_dto_resp.LocationCheckResponse:
+    properties:
+      has_alert:
+        type: boolean
+      incidents:
+        items:
+          $ref: '#/definitions/github_com_4otis_geonotify-service_internal_dto_resp.IncidentResponse'
+        type: array
+    type: object
+  github_com_4otis_geonotify-service_internal_dto_resp.StatsResponse:
+    properties:
+      period_start:
+        type: string
+      total_checks:
+        type: integer
+      user_count:
+        type: integer
+      window_minutes:
+        type: integer
+    type: object
+  internal_handler_http.ErrorResponse:
+    properties:
+      error:
+        type: string
+      message:
+        type: string
+    type: object
+host: localhost:8081
+info:
+  contact: {}
+  description: REST API сервис, который является частью системы геооповещений
+  title: geonotify-service API
+  version: "1.0"
+paths:
+  /api/v1/incidents:
+    get:
+      description: Получить все инциденты с поддержкой пагинации
+      parameters:
+      - description: Номер страницы (по умолчанию 1)
+        in: query
+        name: page
+        type: integer
+      - description: Лимит на страницу (по умолчанию 10, максимум 100)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_4otis_geonotify-service_internal_dto_resp.IncidentsListResponse'
+        "400":
+          description: Неверные параметры пагинации
+          schema:
+            type: string
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Получить список инцидентов с пагинацией (оператор)
+      tags:
+      - incidents
+    post:
+      consumes:
+      - application/json
+      description: Создать новую опасную зону (требуется API key)
+      parameters:
+      - description: Данные инцидента
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_4otis_geonotify-service_internal_dto_req.IncidentCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_4otis_geonotify-service_internal_dto_resp.IncidentCreateResponse'
+        "400":
+          description: Неверный формат данных
+          schema:
+            type: string
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Создать инцидент (оператор)
+      tags:
+      - incidents
+  /api/v1/incidents/{incident_id}:
+    delete:
+      description: Мягкое удаление опасной зоны
+      parameters:
+      - description: ID инцидента
+        in: path
+        name: incident_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Инцидент удален
+          schema:
+            type: string
+        "400":
+          description: Неверный ID
+          schema:
+            type: string
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "404":
+          description: Инцидент не найден
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Удалить инцидент (оператор)
+      tags:
+      - incidents
+    get:
+      description: Детали конкретной зоны опасности
+      parameters:
+      - description: ID инцидента
+        in: path
+        name: incident_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_4otis_geonotify-service_internal_dto_resp.IncidentResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "404":
+          description: Инцидент не найден
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Получить инцидент по ID (оператор)
+      tags:
+      - incidents
+    put:
+      consumes:
+      - application/json
+      description: Полное обновление данных существующей опасной зоны (PUT)
+      parameters:
+      - description: ID инцидента
+        in: path
+        name: incident_id
+        required: true
+        type: integer
+      - description: Полные данные инцидента
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_4otis_geonotify-service_internal_dto_req.IncidentUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Инцидент обновлен
+          schema:
+            type: string
+        "400":
+          description: Неверный формат данных
+          schema:
+            type: string
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "404":
+          description: Инцидент не найден
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Обновить инцидент (оператор)
+      tags:
+      - incidents
+  /api/v1/incidents/stats:
+    get:
+      description: Получить статистику уникальных пользователей за последние N минут
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_4otis_geonotify-service_internal_dto_resp.StatsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handler_http.ErrorResponse'
+      summary: Статистика по зонам
+      tags:
+      - stats
+  /api/v1/location/check:
+    post:
+      consumes:
+      - application/json
+      description: Проверить, попадает ли точка в опасную зону (публичный эндпоинт)
+      parameters:
+      - description: Координаты для проверки
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_4otis_geonotify-service_internal_dto_req.LocationCheckRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_4otis_geonotify-service_internal_dto_resp.LocationCheckResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler_http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handler_http.ErrorResponse'
+      summary: Проверить координаты
+      tags:
+      - location
+  /api/v1/system/health:
+    get:
+      description: Проверка состояния системы
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_4otis_geonotify-service_internal_dto_resp.HealthResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_4otis_geonotify-service_internal_dto_resp.HealthResponse'
+      summary: Health check
+      tags:
+      - system
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

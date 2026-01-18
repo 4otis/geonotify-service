@@ -1,0 +1,525 @@
+{
+    "info": {
+        "name": "Geonotify API Tests",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_postman_id": "geonotify-api-tests"
+    },
+    "item": [
+        {
+            "name": "1. Health Check",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:8081/api/v1/system/health",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8081",
+                    "path": [
+                        "api",
+                        "v1",
+                        "system",
+                        "health"
+                    ]
+                },
+                "description": "Тестирование Health Check"
+            },
+            "response": []
+        },
+        {
+            "name": "2. Создание инцидента",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer secret-api-key-required"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"Тестовая опасная зона\",\n    \"descr\": \"Зона для тестирования\",\n    \"latitude\": 55.7558,\n    \"longitude\": 37.6176,\n    \"radius_m\": 1000\n}"
+                },
+                "url": {
+                    "raw": "http://localhost:8081/api/v1/incidents",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8081",
+                    "path": [
+                        "api",
+                        "v1",
+                        "incidents"
+                    ]
+                },
+                "description": "Создание тестовой опасной зоны. Сохранить incident_id в переменную"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "// Сохраняем incident_id в переменную",
+                            "var jsonData = pm.response.json();",
+                            "var incidentId = jsonData.incident_id || jsonData.IncidentID;",
+                            "pm.collectionVariables.set(\"incident_id\", incidentId);",
+                            "",
+                            "// Проверяем ответ",
+                            "pm.test(\"Status code is 201\", function () {",
+                            "    pm.response.to.have.status(201);",
+                            "});",
+                            "",
+                            "pm.test(\"Response has incident_id\", function () {",
+                            "    pm.expect(incidentId).to.be.a('number');",
+                            "    pm.expect(incidentId).to.be.above(0);",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. Получение инцидента по ID",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer secret-api-key-required"
+                    }
+                ],
+                "url": {
+                    "raw": "http://localhost:8081/api/v1/incidents/{{incident_id}}",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8081",
+                    "path": [
+                        "api",
+                        "v1",
+                        "incidents",
+                        "{{incident_id}}"
+                    ],
+                    "variable": [
+                        {
+                            "key": "incident_id",
+                            "value": ""
+                        }
+                    ]
+                },
+                "description": "Получение созданного инцидента"
+            },
+            "response": []
+        },
+        {
+            "name": "4. Список инцидентов",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer secret-api-key-required"
+                    }
+                ],
+                "url": {
+                    "raw": "http://localhost:8081/api/v1/incidents?page=1&limit=10",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8081",
+                    "path": [
+                        "api",
+                        "v1",
+                        "incidents"
+                    ],
+                    "query": [
+                        {
+                            "key": "page",
+                            "value": "1"
+                        },
+                        {
+                            "key": "limit",
+                            "value": "10"
+                        }
+                    ]
+                },
+                "description": "Получение списка инцидентов с пагинацией"
+            },
+            "response": []
+        },
+        {
+            "name": "5. Обновление инцидента",
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer secret-api-key-required"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"Обновленная зона\",\n    \"descr\": \"Обновленное описание\",\n    \"latitude\": 55.7558,\n    \"longitude\": 37.6176,\n    \"radius_m\": 1500,\n    \"is_active\": true\n}"
+                },
+                "url": {
+                    "raw": "http://localhost:8081/api/v1/incidents/{{incident_id}}",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8081",
+                    "path": [
+                        "api",
+                        "v1",
+                        "incidents",
+                        "{{incident_id}}"
+                    ],
+                    "variable": [
+                        {
+                            "key": "incident_id",
+                            "value": ""
+                        }
+                    ]
+                },
+                "description": "Обновление данных инцидента"
+            },
+            "response": []
+        },
+        {
+            "name": "6. Проверка координат (попадание в зону)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"user_id\": \"test_user_123\",\n    \"latitude\": 55.7558,\n    \"longitude\": 37.6176\n}"
+                },
+                "url": {
+                    "raw": "http://localhost:8081/api/v1/location/check",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8081",
+                    "path": [
+                        "api",
+                        "v1",
+                        "location",
+                        "check"
+                    ]
+                },
+                "description": "Проверка координат, которые должны попадать в зону"
+            },
+            "response": []
+        },
+        {
+            "name": "7. Проверка координат (НЕ попадание)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"user_id\": \"test_user_456\",\n    \"latitude\": 0.0,\n    \"longitude\": 0.0\n}"
+                },
+                "url": {
+                    "raw": "http://localhost:8081/api/v1/location/check",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8081",
+                    "path": [
+                        "api",
+                        "v1",
+                        "location",
+                        "check"
+                    ]
+                },
+                "description": "Проверка координат, которые НЕ должны попадать в зону"
+            },
+            "response": []
+        },
+        {
+            "name": "8. Статистика",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:8081/api/v1/incidents/stats",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8081",
+                    "path": [
+                        "api",
+                        "v1",
+                        "incidents",
+                        "stats"
+                    ]
+                },
+                "description": "Получение статистики"
+            },
+            "response": []
+        },
+        {
+            "name": "9. Тест на дурака: создание без API key",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"Тестовая опасная зона\",\n    \"descr\": \"Зона для тестирования\",\n    \"latitude\": 55.7558,\n    \"longitude\": 37.6176,\n    \"radius_m\": 1000\n}"
+                },
+                "url": {
+                    "raw": "http://localhost:8081/api/v1/incidents",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8081",
+                    "path": [
+                        "api",
+                        "v1",
+                        "incidents"
+                    ]
+                },
+                "description": "Попытка создания без API ключа (должно вернуть 401)"
+            },
+            "response": []
+        },
+        {
+            "name": "10. Тест на дурака: неверный API key",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer wrong-key-123"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"Тестовая опасная зона\",\n    \"descr\": \"Зона для тестирования\",\n    \"latitude\": 55.7558,\n    \"longitude\": 37.6176,\n    \"radius_m\": 1000\n}"
+                },
+                "url": {
+                    "raw": "http://localhost:8081/api/v1/incidents",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8081",
+                    "path": [
+                        "api",
+                        "v1",
+                        "incidents"
+                    ]
+                },
+                "description": "Попытка создания с неверным API ключом (должно вернуть 401)"
+            },
+            "response": []
+        },
+        {
+            "name": "11. Тест на дурака: невалидные координаты",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"user_id\": \"test_user\",\n    \"latitude\": 95.0,\n    \"longitude\": 200.0\n}"
+                },
+                "url": {
+                    "raw": "http://localhost:8081/api/v1/location/check",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8081",
+                    "path": [
+                        "api",
+                        "v1",
+                        "location",
+                        "check"
+                    ]
+                },
+                "description": "Проверка с невалидными координатами (должно вернуть 400)"
+            },
+            "response": []
+        },
+        {
+            "name": "12. Тест на дурака: невалидный радиус",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer secret-api-key-required"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"Тест\",\n    \"descr\": \"Тест\",\n    \"latitude\": 55.7558,\n    \"longitude\": 37.6176,\n    \"radius_m\": -100\n}"
+                },
+                "url": {
+                    "raw": "http://localhost:8081/api/v1/incidents",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8081",
+                    "path": [
+                        "api",
+                        "v1",
+                        "incidents"
+                    ]
+                },
+                "description": "Создание с невалидным радиусом (должно вернуть 400)"
+            },
+            "response": []
+        },
+        {
+            "name": "13. Удаление инцидента",
+            "request": {
+                "method": "DELETE",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer secret-api-key-required"
+                    }
+                ],
+                "url": {
+                    "raw": "http://localhost:8081/api/v1/incidents/{{incident_id}}",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8081",
+                    "path": [
+                        "api",
+                        "v1",
+                        "incidents",
+                        "{{incident_id}}"
+                    ],
+                    "variable": [
+                        {
+                            "key": "incident_id",
+                            "value": ""
+                        }
+                    ]
+                },
+                "description": "Удаление созданного инцидента"
+            },
+            "response": []
+        },
+        {
+            "name": "14. Попытка получить удаленный инцидент",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer secret-api-key-required"
+                    }
+                ],
+                "url": {
+                    "raw": "http://localhost:8081/api/v1/incidents/{{incident_id}}",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8081",
+                    "path": [
+                        "api",
+                        "v1",
+                        "incidents",
+                        "{{incident_id}}"
+                    ],
+                    "variable": [
+                        {
+                            "key": "incident_id",
+                            "value": ""
+                        }
+                    ]
+                },
+                "description": "Попытка получить удаленный инцидент"
+            },
+            "response": []
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8081"
+        },
+        {
+            "key": "api_key",
+            "value": "secret-api-key-required"
+        },
+        {
+            "key": "incident_id",
+            "value": ""
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "console.log('Запуск тестов Geonotify API');"
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "console.log('Тест завершен: ' + pm.info.requestName);"
+                ]
+            }
+        }
+    ]
+}

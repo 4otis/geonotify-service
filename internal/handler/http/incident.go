@@ -14,17 +14,14 @@ import (
 )
 
 type IncidentHandler struct {
-	logger       *zap.Logger
-	apiKey       string
-	incidentCase cases.IncidentUseCase
+	logger *zap.Logger
+	uc     cases.IncidentUseCase
 }
 
-func NewIncidentHandler(logger *zap.Logger, apiKey string,
-	incidentCase cases.IncidentUseCase) *IncidentHandler {
+func NewIncidentHandler(logger *zap.Logger, uc cases.IncidentUseCase) *IncidentHandler {
 	return &IncidentHandler{
-		logger:       logger,
-		apiKey:       apiKey,
-		incidentCase: incidentCase,
+		logger: logger,
+		uc:     uc,
 	}
 }
 
@@ -41,13 +38,6 @@ func NewIncidentHandler(logger *zap.Logger, apiKey string,
 // @Failure      500            {string}  string  "Внутренняя ошибка сервера"
 // @Router       /api/v1/incidents [post]
 func (h *IncidentHandler) IncidentCreate(w http.ResponseWriter, r *http.Request) {
-
-	auth := r.Header.Get("Authorization")
-	if auth != "Bearer "+h.apiKey {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-
 	var req dtoReq.IncidentCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)
@@ -68,7 +58,7 @@ func (h *IncidentHandler) IncidentCreate(w http.ResponseWriter, r *http.Request)
 		Radius:    req.Radius,
 	}
 
-	incidentID, err := h.incidentCase.CreateIncident(r.Context(), incident)
+	incidentID, err := h.uc.CreateIncident(r.Context(), incident)
 	if err != nil {
 		h.logger.Error("incident create failed", zap.Error(err))
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -99,19 +89,13 @@ func (h *IncidentHandler) IncidentCreate(w http.ResponseWriter, r *http.Request)
 // @Failure      500 {string} string "Внутренняя ошибка сервера"
 // @Router       /api/v1/incidents/{incident_id} [get]
 func (h *IncidentHandler) IncidentGet(w http.ResponseWriter, r *http.Request) {
-	auth := r.Header.Get("Authorization")
-	if auth != "Bearer "+h.apiKey {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-
 	id, err := strconv.Atoi(chi.URLParam(r, "incident_id"))
 	if err != nil {
 		http.Error(w, "id required/not valid", http.StatusBadRequest)
 		return
 	}
 
-	incident, err := h.incidentCase.ReadIncident(r.Context(), id)
+	incident, err := h.uc.ReadIncident(r.Context(), id)
 	if err != nil {
 		h.logger.Error("incident get failed",
 			zap.Error(err),
@@ -156,12 +140,6 @@ func (h *IncidentHandler) IncidentGet(w http.ResponseWriter, r *http.Request) {
 // @Failure      500            {string}  string  "Внутренняя ошибка сервера"
 // @Router       /api/v1/incidents [get]
 func (h *IncidentHandler) IncidentList(w http.ResponseWriter, r *http.Request) {
-	auth := r.Header.Get("Authorization")
-	if auth != "Bearer "+h.apiKey {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-
 	pageStr := r.URL.Query().Get("page")
 	limitStr := r.URL.Query().Get("limit")
 
@@ -186,7 +164,7 @@ func (h *IncidentHandler) IncidentList(w http.ResponseWriter, r *http.Request) {
 		limit = l
 	}
 
-	result, err := h.incidentCase.ReadIncidentsWithPagination(r.Context(), page, limit)
+	result, err := h.uc.ReadIncidentsWithPagination(r.Context(), page, limit)
 	if err != nil {
 		h.logger.Error("incident list failed",
 			zap.Error(err),
@@ -241,12 +219,6 @@ func (h *IncidentHandler) IncidentList(w http.ResponseWriter, r *http.Request) {
 // @Failure      500            {string}  string                         "Внутренняя ошибка сервера"
 // @Router       /api/v1/incidents/{incident_id} [put]
 func (h *IncidentHandler) IncidentUpdate(w http.ResponseWriter, r *http.Request) {
-	auth := r.Header.Get("Authorization")
-	if auth != "Bearer "+h.apiKey {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-
 	id, err := strconv.Atoi(chi.URLParam(r, "incident_id"))
 	if err != nil {
 		http.Error(w, "id required/not valid", http.StatusBadRequest)
@@ -275,7 +247,7 @@ func (h *IncidentHandler) IncidentUpdate(w http.ResponseWriter, r *http.Request)
 		IsActive:  req.IsActive,
 	}
 
-	err = h.incidentCase.UpdateIncident(r.Context(), incident)
+	err = h.uc.UpdateIncident(r.Context(), incident)
 	if err != nil {
 		h.logger.Error("incident update failed",
 			zap.Error(err),
@@ -307,19 +279,13 @@ func (h *IncidentHandler) IncidentUpdate(w http.ResponseWriter, r *http.Request)
 // @Failure      500            {string}  string  "Внутренняя ошибка сервера"
 // @Router       /api/v1/incidents/{incident_id} [delete]
 func (h *IncidentHandler) IncidentDelete(w http.ResponseWriter, r *http.Request) {
-	auth := r.Header.Get("Authorization")
-	if auth != "Bearer "+h.apiKey {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-
 	id, err := strconv.Atoi(chi.URLParam(r, "incident_id"))
 	if err != nil {
 		http.Error(w, "id required/not valid", http.StatusBadRequest)
 		return
 	}
 
-	err = h.incidentCase.DeleteIncident(r.Context(), id)
+	err = h.uc.DeleteIncident(r.Context(), id)
 	if err != nil {
 		h.logger.Error("incident delete failed",
 			zap.Error(err),

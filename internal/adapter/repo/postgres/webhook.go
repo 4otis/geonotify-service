@@ -93,6 +93,36 @@ func (r *WebhookRepo) MarkAsDelivered(ctx context.Context, id int) error {
 	return nil
 }
 
+func (r *WebhookRepo) Read(ctx context.Context, id int) (*entity.Webhook, error) {
+	query := `
+    SELECT 
+        id, check_id, state, retry_cnt, payload, 
+        created_at, updated_at, scheduled_at
+    FROM webhooks
+    WHERE id = $1;
+    `
+
+	wh := &entity.Webhook{}
+	var deliveredAt *time.Time
+
+	err := r.pool.QueryRow(ctx, query, id).Scan(
+		&wh.ID,
+		&wh.CheckID,
+		&wh.State,
+		&wh.RetryCnt,
+		&wh.Payload,
+		&wh.CreatedAt,
+		&wh.UpdatedAt,
+		&wh.ScheduledAt,
+		&deliveredAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get webhook by id: %w", err)
+	}
+
+	return wh, nil
+}
+
 func (r *WebhookRepo) ReadInProgress(ctx context.Context, limit int) ([]*entity.Webhook, error) {
 	query := `
 	SELECT 
