@@ -10,6 +10,7 @@ type IncidentRepo interface {
 	Create(ctx context.Context, incident entity.Incident) (incidentID int, err error)
 	Read(ctx context.Context, incID int) (i *entity.Incident, err error)
 	ReadWithPagination(ctx context.Context, page, limit int) ([]*entity.Incident, int, error)
+	ReadAllActive(ctx context.Context) ([]*entity.Incident, error)
 	Update(ctx context.Context, incident entity.Incident) error
 	Delete(ctx context.Context, incID int) error
 }

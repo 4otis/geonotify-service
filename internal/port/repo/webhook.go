@@ -1,0 +1,13 @@
+package repo
+
+import (
+	"context"
+
+	"github.com/4otis/geonotify-service/internal/entity"
+)
+
+type WebhookRepo interface {
+	Create(ctx context.Context, w entity.Webhook) (webhookID int, err error)
+	UpdateState(ctx context.Context, id int, newState string, retryCnt int) error
+	ReadInProgress(ctx context.Context, limit int) ([]*entity.Webhook, error)
+}
