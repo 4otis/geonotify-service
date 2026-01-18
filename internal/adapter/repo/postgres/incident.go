@@ -197,3 +197,47 @@ func (r *IncidentRepo) Delete(ctx context.Context, incID int) error {
 
 	return nil
 }
+
+func (r *IncidentRepo) ReadAllActive(ctx context.Context) ([]*entity.Incident, error) {
+	query := `
+	SELECT
+		id, name, descr, latitude, longitude,
+		radius_m, is_active, created_at, ipdated_at
+	FROM incidents
+	WHERE is_active=true AND deleted_at IS NULL
+	ORDER BY updated_at DESC;
+	`
+
+	rows, err := r.pool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query all active incidents: %w", err)
+	}
+	defer rows.Close()
+
+	incidents := make([]*entity.Incident, 0)
+	for rows.Next() {
+		i := &entity.Incident{}
+		err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Descr,
+			&i.Latitude,
+			&i.Longitude,
+			&i.Radius,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan incident from rows: %w", err)
+		}
+		incidents = append(incidents, i)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error while iterating incident rows: %w", err)
+	}
+
+	return incidents, nil
+}
