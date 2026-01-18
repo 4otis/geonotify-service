@@ -26,9 +26,10 @@ type Webhook struct {
 	CheckID     int
 	State       string
 	RetryCnt    int
-	CreatedAt   time.Time
-	DeliveredAt time.Time
 	Payload     []byte
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	ScheduledAt time.Time
 }
 
 type Check struct {
