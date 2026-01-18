@@ -8,10 +8,10 @@ CREATE TABLE webhooks (
     payload BYTEA NOT NULL,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
-    scheduled_at TIMESTAMP DEFAULT NOW(),
+    scheduled_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_webhooks_status ON webhooks(status);
+CREATE INDEX idx_webhooks_status ON webhooks(state);
 CREATE INDEX idx_webhooks_scheduled_at ON webhooks(scheduled_at);
 CREATE INDEX idx_webhooks_check_id ON webhooks(check_id);
 -- +goose StatementEnd
