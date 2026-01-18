@@ -20,3 +20,22 @@ type Incident struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
+
+type Webhook struct {
+	ID          int
+	CheckID     int
+	State       string
+	RetryCnt    int
+	CreatedAt   time.Time
+	DeliveredAt time.Time
+	Payload     []byte
+}
+
+type Check struct {
+	ID        int
+	UserID    int
+	Latitude  float64
+	Longitude float64
+	HasAlert  bool
+	CreatedAt time.Time
+}
