@@ -14,8 +14,10 @@ import (
 	"go.uber.org/zap"
 )
 
+var _ LocationUseCase = (*LocationUseCaseImpl)(nil)
+
 type LocationUseCase interface {
-	CheckLocation(ctx context.Context, userID string, lat, lng float64) (bool, []entity.Incident, error)
+	CheckLocation(ctx context.Context, userID string, lat, lng float64) (bool, []*entity.Incident, error)
 	InvalidateIncidentsCache(ctx context.Context) error
 }
 
