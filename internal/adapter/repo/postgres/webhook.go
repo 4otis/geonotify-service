@@ -99,7 +99,7 @@ func (r *WebhookRepo) ReadInProgress(ctx context.Context, limit int) ([]*entity.
 		id, check_id, state, retry_cnt, payload, 
 		created_at, updated_at, scheduled_at
 	FROM webhooks
-	WHERE status IN ('in progress')
+	WHERE state='in progress'
 		AND scheduled_at <= NOW()
 	ORDER BY scheduled_at ASC
 	LIMIT $1;

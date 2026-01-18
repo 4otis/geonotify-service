@@ -6,7 +6,9 @@ import (
 )
 
 var (
-	ErrIncidentNotFound = errors.New("incident not found")
+	ErrIncidentNotFound   = errors.New("incident not found")
+	ErrInvalidCoordinates = errors.New("invalid coordinates")
+	ErrUserIDRequired     = errors.New("user_id is required")
 )
 
 type Incident struct {
@@ -34,7 +36,7 @@ type Webhook struct {
 
 type Check struct {
 	ID        int
-	UserID    int
+	UserID    string
 	Latitude  float64
 	Longitude float64
 	HasAlert  bool
