@@ -2,11 +2,13 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/4otis/geonotify-service/internal/entity"
 	"github.com/4otis/geonotify-service/internal/port/repo"
 	"github.com/4otis/geonotify-service/pkg/postgres"
+	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -70,9 +72,12 @@ func (r *IncidentRepo) Read(ctx context.Context, incID int) (*entity.Incident, e
 		&i.UpdatedAt,
 	)
 	if err != nil {
-		return &entity.Incident{},
-			fmt.Errorf("failed to select incident (by id=%v): %w", incID, err)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, entity.ErrIncidentNotFound
+		}
+		return nil, fmt.Errorf("failed to select incident (by id=%v): %w", incID, err)
 	}
+
 	return i, nil
 }
 
@@ -132,7 +137,7 @@ func (r *IncidentRepo) ReadWithPagination(ctx context.Context, page, limit int) 
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, 0, fmt.Errorf("error while iterating incident rows^ %w", err)
+		return nil, 0, fmt.Errorf("error while iterating incident rows: %w", err)
 	}
 
 	return incidents, totalIncidents, nil

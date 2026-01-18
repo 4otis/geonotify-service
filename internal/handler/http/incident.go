@@ -54,16 +54,9 @@ func (h *IncidentHandler) IncidentCreate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if req.Name == "" {
-		http.Error(w, "name required", http.StatusBadRequest)
-		return
-	}
-	if req.Latitude < -90 || req.Latitude > 90 || req.Longitude < -180 || req.Longitude > 180 {
-		http.Error(w, "invalid coordinates", http.StatusBadRequest)
-		return
-	}
-	if req.Radius <= 0 {
-		http.Error(w, "radius_m must be > 0", http.StatusBadRequest)
+	isValid, msg := h.validateIncidentRequest(req.Name, req.Latitude, req.Longitude, req.Radius)
+	if !isValid {
+		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
 
@@ -99,10 +92,11 @@ func (h *IncidentHandler) IncidentCreate(w http.ResponseWriter, r *http.Request)
 // @Tags         incidents
 // @Produce      json
 // @Security     ApiKeyAuth
-// @Param        id             path    string  true  "ID инцидента"
+// @Param        incident_id  path    string  true  "ID инцидента"
 // @Success      200 {object} dtoResp.IncidentResponse
 // @Failure      401 {string} string "Не авторизован"
 // @Failure      404 {string} string "Инцидент не найден"
+// @Failure      500 {string} string "Внутренняя ошибка сервера"
 // @Router       /api/v1/incidents/{incident_id} [get]
 func (h *IncidentHandler) IncidentGet(w http.ResponseWriter, r *http.Request) {
 	auth := r.Header.Get("Authorization")
@@ -122,8 +116,11 @@ func (h *IncidentHandler) IncidentGet(w http.ResponseWriter, r *http.Request) {
 		h.logger.Error("incident get failed",
 			zap.Error(err),
 			zap.Int("id", id))
-
-		http.Error(w, "incident not found", http.StatusNotFound)
+		if err == entity.ErrIncidentNotFound {
+			http.Error(w, "incident not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -230,13 +227,13 @@ func (h *IncidentHandler) IncidentList(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary      Обновить инцидент (оператор)
-// @Description  Обновить данные существующей опасной зоны
+// @Description  Полное обновление данных существующей опасной зоны (PUT)
 // @Tags         incidents
 // @Accept       json
 // @Produce      json
 // @Security     ApiKeyAuth
 // @Param        incident_id    path      int                            true  "ID инцидента"
-// @Param        request        body      dtoReq.IncidentUpdateRequest   true  "Обновленные данные инцидента"
+// @Param        request        body      dtoReq.IncidentUpdateRequest   true  "Полные данные инцидента"
 // @Success      200            {string}  string                         "Инцидент обновлен"
 // @Failure      400            {string}  string                         "Неверный формат данных"
 // @Failure      401            {string}  string                         "Не авторизован"
@@ -262,71 +259,20 @@ func (h *IncidentHandler) IncidentUpdate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if req.Latitude != nil && (*req.Latitude < -90 || *req.Latitude > 90) {
-		http.Error(w, "invalid latitude", http.StatusBadRequest)
-		return
-	}
-	if req.Longitude != nil && (*req.Longitude < -180 || *req.Longitude > 180) {
-		http.Error(w, "invalid longitude", http.StatusBadRequest)
-		return
-	}
-	if req.Radius != nil && *req.Radius <= 0 {
-		http.Error(w, "radius_m must be > 0", http.StatusBadRequest)
-		return
-	}
-
-	currentIncident, err := h.incidentCase.ReadIncident(r.Context(), id)
-	if err != nil {
-		h.logger.Error("incident not found for update",
-			zap.Error(err),
-			zap.Int("id", id))
-
-		http.Error(w, "incident not found", http.StatusNotFound)
+	isValid, msg := h.validateIncidentRequest(req.Name, req.Latitude, req.Longitude, req.Radius)
+	if !isValid {
+		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
 
 	incident := entity.Incident{
-		ID: id,
-	}
-
-	if req.Name != nil {
-		if *req.Name == "" {
-			http.Error(w, "name cannot be empty", http.StatusBadRequest)
-			return
-		}
-		incident.Name = *req.Name
-	} else {
-		incident.Name = currentIncident.Name
-	}
-
-	if req.Descr != nil {
-		incident.Descr = *req.Descr
-	} else {
-		incident.Descr = currentIncident.Descr
-	}
-
-	if req.Latitude != nil {
-		incident.Latitude = *req.Latitude
-	} else {
-		incident.Latitude = currentIncident.Latitude
-	}
-
-	if req.Longitude != nil {
-		incident.Longitude = *req.Longitude
-	} else {
-		incident.Longitude = currentIncident.Longitude
-	}
-
-	if req.Radius != nil {
-		incident.Radius = *req.Radius
-	} else {
-		incident.Radius = currentIncident.Radius
-	}
-
-	if req.IsActive != nil {
-		incident.IsActive = *req.IsActive
-	} else {
-		incident.IsActive = currentIncident.IsActive
+		ID:        id,
+		Name:      req.Name,
+		Descr:     req.Descr,
+		Latitude:  req.Latitude,
+		Longitude: req.Longitude,
+		Radius:    req.Radius,
+		IsActive:  req.IsActive,
 	}
 
 	err = h.incidentCase.UpdateIncident(r.Context(), incident)
@@ -390,4 +336,21 @@ func (h *IncidentHandler) IncidentDelete(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message": "incident deleted"}`))
+}
+
+func (h *IncidentHandler) validateCoordinates(lat, lng float64) bool {
+	return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180
+}
+
+func (h *IncidentHandler) validateIncidentRequest(name string, lat, lng, radius float64) (bool, string) {
+	if name == "" {
+		return false, "name is required"
+	}
+	if !h.validateCoordinates(lat, lng) {
+		return false, "invalid coordinates"
+	}
+	if radius <= 0 {
+		return false, "radius_m must be > 0"
+	}
+	return true, ""
 }

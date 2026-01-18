@@ -27,21 +27,11 @@ func NewIncidentUseCase(repo repo.IncidentRepo) *IncidentUseCaseImpl {
 }
 
 func (uc *IncidentUseCaseImpl) CreateIncident(ctx context.Context, incident entity.Incident) (incID int, err error) {
-	incID, err = uc.repo.Create(ctx, incident)
-	if err != nil {
-		return incID, err
-	}
-
-	return incID, nil
+	return uc.repo.Create(ctx, incident)
 }
 
 func (uc *IncidentUseCaseImpl) ReadIncident(ctx context.Context, incId int) (*entity.Incident, error) {
-	incident, err := uc.repo.Read(ctx, incId)
-	if err != nil {
-		return nil, err
-	}
-
-	return incident, nil
+	return uc.repo.Read(ctx, incId)
 }
 
 func (uc *IncidentUseCaseImpl) ReadIncidentsWithPagination(ctx context.Context, page, limit int) (IncidentsWithPagination, error) {
